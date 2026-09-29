@@ -1,0 +1,16 @@
+{
+    "name": "Netflat",
+    "rootNamespace": "Netflat",
+    "references": [
+        "Netflat.Native"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
