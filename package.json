@@ -1,7 +1,7 @@
 {
   "name": "com.a1t.netflat",
   "version": "1.0.0",
-  "displayName": "netflat",
+  "displayName": "Netflat",
   "description": "C# side of netflat: INetflat backends over the native netflat libraries (rudp, steam) and NetworkServer / NetworkClient with typed struct packets.",
   "unity": "6000.0",
   "author": {
