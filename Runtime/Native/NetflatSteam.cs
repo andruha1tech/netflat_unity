@@ -6,8 +6,6 @@ namespace Netflat.Native
 {
     public sealed unsafe class NetflatSteam : INetflat
     {
-        public const int MaxLobbyMembers = 8;
-
         private static NetflatSteam s_instance;
 
         private readonly NetflatLoopback _loopback = new NetflatLoopback(NetflatAbi.MaxPacket);
@@ -40,7 +38,7 @@ namespace Netflat.Native
 
         public string ServerLocalEndpoint => _lobby != 0 ? FormatId(_lobby) : null;
 
-        public bool ServerStart(string endpoint, out string error)
+        public bool ServerStart(string endpoint, int maxPeers, out string error)
         {
             ThrowIfDisposed();
 
@@ -55,7 +53,7 @@ namespace Netflat.Native
                 return false;
             }
 
-            if (Dll.nf_serv_start($"peers={MaxLobbyMembers}") != 0)
+            if (Dll.nf_serv_start($"peers={maxPeers}") != 0)
             {
                 error = "Steam could not start creating a lobby.";
                 return false;

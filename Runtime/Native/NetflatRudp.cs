@@ -42,7 +42,7 @@ namespace Netflat.Native
 
         public string ServerLocalEndpoint => _serverRunning ? $"{LocalHost}:{_serverPort}" : null;
 
-        public bool ServerStart(string endpoint, out string error)
+        public bool ServerStart(string endpoint, int maxPeers, out string error)
         {
             ThrowIfDisposed();
 

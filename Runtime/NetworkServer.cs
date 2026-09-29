@@ -38,7 +38,7 @@ namespace Netflat
 
         public bool IsRunning => State == ServerState.Running;
 
-        public int MaxPeers { get; set; } = 16;
+        public int MaxPeers { get; private set; }
 
         public IReadOnlyCollection<PeerId> Peers => _peers;
 
@@ -46,7 +46,7 @@ namespace Netflat
 
         public string Address { get; private set; }
 
-        public bool Start(string endpoint, out string error)
+        public bool Start(string endpoint, int maxPeers, out string error)
         {
             if (State != ServerState.Stopped)
             {
@@ -54,13 +54,14 @@ namespace Netflat
                 return false;
             }
 
-            if (!_netflat.ServerStart(endpoint, out error))
+            if (!_netflat.ServerStart(endpoint, maxPeers, out error))
             {
                 _logger.LogError(LogTag, $"Failed to start on '{endpoint}' via {_netflat.Name}: {error}");
                 return false;
             }
 
             State = ServerState.Starting;
+            MaxPeers = maxPeers;
 
             _logger.Log(LogTag, $"Starting on '{endpoint}' via {_netflat.Name}.");
             return true;
