@@ -19,11 +19,6 @@ namespace Netflat
             _netflat = netflat;
             _logger = logger;
             _codec = new PacketCodec(netflat.MaxPacketSize, logger, LogTag);
-
-            if (!netflat.Initialize(out string error))
-            {
-                logger.LogError(LogTag, $"{netflat.Name} failed to initialize: {error}");
-            }
         }
 
         public event Action Connected;
