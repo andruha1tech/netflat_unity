@@ -14,7 +14,7 @@ namespace Netflat.Native
 
         private readonly NetflatLoopback _loopback = new NetflatLoopback(NetflatAbi.MaxPacket);
 
-        private readonly string _initError;
+        private string _initError = $"{Dll.Library} is not initialized.";
 
         private bool _initialized;
 
@@ -34,8 +34,6 @@ namespace Netflat.Native
             }
 
             s_instance = this;
-
-            _initialized = TryInitialize(out _initError);
         }
 
         public string Name => "rudp";
@@ -45,6 +43,19 @@ namespace Netflat.Native
         public string DefaultEndpoint => $"{LocalHost}:{DefaultPort}";
 
         public string ServerLocalEndpoint => _serverRunning ? $"{LocalHost}:{_serverPort}" : null;
+
+        public bool Initialize(out string error)
+        {
+            ThrowIfDisposed();
+
+            if (!_initialized)
+            {
+                _initialized = TryInitialize(out _initError);
+            }
+
+            error = _initError;
+            return _initialized;
+        }
 
         public bool ServerStart(string endpoint, int maxPeers, out string error)
         {

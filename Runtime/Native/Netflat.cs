@@ -15,6 +15,8 @@ namespace Netflat.Native
 
         string ServerLocalEndpoint { get; }
 
+        bool Initialize(out string error);
+
         bool ServerStart(string endpoint, int maxPeers, out string error);
 
         void ServerStop();
