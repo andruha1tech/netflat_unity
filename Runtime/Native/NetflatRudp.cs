@@ -14,6 +14,8 @@ namespace Netflat.Native
 
         private readonly NetflatLoopback _loopback = new NetflatLoopback(NetflatAbi.MaxPacket);
 
+        private readonly string _initError;
+
         private bool _initialized;
 
         private bool _disposed;
@@ -32,6 +34,8 @@ namespace Netflat.Native
             }
 
             s_instance = this;
+
+            _initialized = TryInitialize(out _initError);
         }
 
         public string Name => "rudp";
@@ -58,8 +62,9 @@ namespace Netflat.Native
                 return false;
             }
 
-            if (!EnsureInitialized(out error))
+            if (!_initialized)
             {
+                error = _initError;
                 return false;
             }
 
@@ -71,6 +76,8 @@ namespace Netflat.Native
 
             _serverRunning = true;
             _serverPort = port;
+
+            error = null;
             return true;
         }
 
@@ -237,8 +244,9 @@ namespace Netflat.Native
                 return true;
             }
 
-            if (!EnsureInitialized(out error))
+            if (!_initialized)
             {
+                error = _initError;
                 return false;
             }
 
@@ -249,6 +257,8 @@ namespace Netflat.Native
             }
 
             _clientOpen = true;
+
+            error = null;
             return true;
         }
 
@@ -377,14 +387,9 @@ namespace Netflat.Native
             }
         }
 
-        private bool EnsureInitialized(out string error)
+        private static bool TryInitialize(out string error)
         {
             error = null;
-
-            if (_initialized)
-            {
-                return true;
-            }
 
             try
             {
@@ -407,7 +412,6 @@ namespace Netflat.Native
                 return false;
             }
 
-            _initialized = true;
             return true;
         }
 
