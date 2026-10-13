@@ -65,15 +65,9 @@ namespace Netflat
             Close(DisconnectReason.Requested);
         }
 
-        public IDisposable On<T>(Action<T> handler) where T : struct, IPacket
-        {
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
+        public void On<T>(Action<T> handler) where T : struct, IPacket => _codec.Handlers.Add(handler);
 
-            return _codec.Subscribe<T>((_, packet) => handler(packet));
-        }
+        public void Off<T>(Action<T> handler) where T : struct, IPacket => _codec.Handlers.Remove(handler);
 
         public bool Send<T>(T packet) where T : struct, IPacket
         {

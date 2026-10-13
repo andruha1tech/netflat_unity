@@ -97,7 +97,9 @@ namespace Netflat
 
         public string GetAddress(PeerId peer) => _addresses.TryGetValue(peer, out string address) ? address : peer.ToString();
 
-        public IDisposable On<T>(Action<PeerId, T> handler) where T : struct, IPacket => _codec.Subscribe(handler);
+        public void On<T>(Action<PeerId, T> handler) where T : struct, IPacket => _codec.Handlers.Add(handler);
+
+        public void Off<T>(Action<PeerId, T> handler) where T : struct, IPacket => _codec.Handlers.Remove(handler);
 
         public bool Send<T>(PeerId peer, T packet) where T : struct, IPacket
         {

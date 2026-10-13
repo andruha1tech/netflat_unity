@@ -198,8 +198,6 @@ namespace Netflat
 
     internal sealed class PacketCodec
     {
-        private readonly PacketHandlers _handlers = new PacketHandlers();
-
         private readonly HashSet<uint> _reportedUnhandled = new HashSet<uint>();
 
         private readonly byte[] _buffer;
@@ -215,7 +213,7 @@ namespace Netflat
             _logTag = logTag;
         }
 
-        public IDisposable Subscribe<T>(Action<PeerId, T> handler) where T : struct, IPacket => _handlers.Add(handler);
+        public PacketHandlers Handlers { get; } = new PacketHandlers();
 
         public bool TryEncode<T>(T packet, out ReadOnlySpan<byte> data) where T : struct, IPacket
         {
@@ -247,7 +245,7 @@ namespace Netflat
             {
                 uint id = reader.ReadUInt();
 
-                if (!_handlers.Dispatch(id, sender, ref reader) && _reportedUnhandled.Add(id))
+                if (!Handlers.Dispatch(id, sender, ref reader) && _reportedUnhandled.Add(id))
                 {
                     _logger.Log(_logTag, $"Ignoring packet 0x{id:X8} from {senderName}: nothing handles it yet (reported once).");
                 }
@@ -269,31 +267,24 @@ namespace Netflat
     {
         private readonly Dictionary<uint, Route> _routes = new Dictionary<uint, Route>();
 
-        public IDisposable Add<T>(Action<PeerId, T> handler) where T : struct, IPacket
+        public void Add<T>(Action<PeerId, T> handler) where T : struct, IPacket => GetOrAdd<T>().PeerHandler += handler;
+
+        public void Add<T>(Action<T> handler) where T : struct, IPacket => GetOrAdd<T>().Handler += handler;
+
+        public void Remove<T>(Action<PeerId, T> handler) where T : struct, IPacket
         {
-            if (handler == null)
+            if (_routes.TryGetValue(PacketId<T>.Value, out Route route) && route is Route<T> typed)
             {
-                throw new ArgumentNullException(nameof(handler));
+                typed.PeerHandler -= handler;
             }
+        }
 
-            uint id = PacketId<T>.Value;
-
-            if (!_routes.TryGetValue(id, out Route route))
+        public void Remove<T>(Action<T> handler) where T : struct, IPacket
+        {
+            if (_routes.TryGetValue(PacketId<T>.Value, out Route route) && route is Route<T> typed)
             {
-                route = new Route<T>();
-
-                _routes.Add(id, route);
+                typed.Handler -= handler;
             }
-            else if (route.PacketType != typeof(T))
-            {
-                throw new InvalidOperationException($"{typeof(T)} and {route.PacketType} share packet id 0x{id:X8}; rename one of them.");
-            }
-
-            var typed = (Route<T>)route;
-
-            typed.Handler += handler;
-
-            return new Subscription(() => typed.Handler -= handler);
         }
 
         public bool Dispatch(uint id, PeerId sender, ref PacketReader reader)
@@ -308,6 +299,24 @@ namespace Netflat
             return true;
         }
 
+        private Route<T> GetOrAdd<T>() where T : struct, IPacket
+        {
+            uint id = PacketId<T>.Value;
+
+            if (!_routes.TryGetValue(id, out Route route))
+            {
+                route = new Route<T>();
+
+                _routes.Add(id, route);
+            }
+            else if (route.PacketType != typeof(T))
+            {
+                throw new InvalidOperationException($"{typeof(T)} and {route.PacketType} share packet id 0x{id:X8}; rename one of them.");
+            }
+
+            return (Route<T>)route;
+        }
+
         private abstract class Route
         {
             public abstract Type PacketType { get; }
@@ -319,11 +328,13 @@ namespace Netflat
 
         private sealed class Route<T> : Route where T : struct, IPacket
         {
-            public Action<PeerId, T> Handler;
+            public Action<PeerId, T> PeerHandler;
+
+            public Action<T> Handler;
 
             public override Type PacketType => typeof(T);
 
-            public override bool HasHandlers => Handler != null;
+            public override bool HasHandlers => PeerHandler != null || Handler != null;
 
             public override void Dispatch(PeerId sender, ref PacketReader reader)
             {
@@ -331,23 +342,8 @@ namespace Netflat
 
                 packet.Read(ref reader);
 
-                Handler?.Invoke(sender, packet);
-            }
-        }
-
-        private sealed class Subscription : IDisposable
-        {
-            private Action _unsubscribe;
-
-            public Subscription(Action unsubscribe)
-            {
-                _unsubscribe = unsubscribe;
-            }
-
-            public void Dispose()
-            {
-                _unsubscribe?.Invoke();
-                _unsubscribe = null;
+                PeerHandler?.Invoke(sender, packet);
+                Handler?.Invoke(packet);
             }
         }
     }
